@@ -1,0 +1,32 @@
+<html>
+<head>
+  <script type="module">
+    import { store } from "/plugins/a0_context_monitor/webui/memory-store.js";
+  </script>
+</head>
+<body>
+  <div x-data>
+    <template x-if="$store.contextMonitor">
+      <div
+        class="ctx-memory-sidebar-anchor"
+        x-create="$store.contextMonitor.mountSidebarEnhancer()"
+        x-destroy="$store.contextMonitor.cleanup()"
+      ></div>
+    </template>
+  </div>
+
+  <style>
+    .ctx-memory-sidebar-anchor {
+      display: none;
+    }
+
+    .ctx-memory-size {
+      font-size: 8pt;
+      opacity: 0.7;
+      margin-left: 4px;
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+  </style>
+</body>
+</html>
