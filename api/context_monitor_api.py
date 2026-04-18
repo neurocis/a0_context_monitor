@@ -19,9 +19,14 @@ logger = logging.getLogger(__name__)
 class ContextMonitorApiHandler(ApiHandler):
     """REST API handler for context monitoring endpoints."""
 
-    def __init__(self):
-        """Initialize the API handler."""
-        super().__init__()
+    def __init__(self, app, thread_lock):
+        """Initialize the API handler.
+        
+        Args:
+            app: Flask application instance
+            thread_lock: Threading lock for synchronization
+        """
+        super().__init__(app, thread_lock)
         self.monitor = ContextMonitorHelper
 
     async def process(self, input: Input, request: Request) -> Output:
@@ -51,10 +56,10 @@ class ContextMonitorApiHandler(ApiHandler):
             elif action == 'table':
                 return await self._get_table()
             else:
-                return Response(f"Unknown action: {action}", 400)
+                return {"error": f"Unknown action: {action}", "status": 400}
         except Exception as e:
             logger.error(f"Error processing request: {e}", exc_info=True)
-            return Response(f"Internal server error: {str(e)}", 500)
+            return {"error": f"Internal server error: {str(e)}", "status": 500}
 
     async def _get_status(self) -> Dict[str, Any]:
         """Check if context monitoring is available.
