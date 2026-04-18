@@ -14,6 +14,8 @@ Provides REST API endpoints and a web dashboard for visibility into active conte
 - 🔔 **Status Monitoring**: Check if context monitoring is available
 - 📄 **Formatted Output**: Display human-readable context summary table
 
+<img width="1122" height="664" alt="image" src="https://github.com/user-attachments/assets/6b372b47-3981-4292-973d-144222cc02a7" />
+
 ## Installation
 
 The plugin is a **local plugin** installed in `/a0/usr/plugins/a0_context_monitor/`.
