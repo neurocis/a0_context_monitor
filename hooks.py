@@ -1,51 +1,54 @@
 """Plugin lifecycle hooks for a0_context_monitor.
 
-Handles plugin initialization and registration.
-Monitoring only - no automatic cleanup.
+Handles plugin initialization and cleanup.
+Monitoring only - no automatic cleanup of contexts.
+
+Note: The ContextMonitorApiHandler is auto-discovered by the framework
+from the api/ directory and registered automatically. This hook performs
+post-install setup tasks only.
 """
 
 import logging
-from api.v2 import ApiHandler, api_handler
-from usr.plugins.a0_context_monitor.api.context_monitor_api import ContextMonitorApiHandler
 
 logger = logging.getLogger(__name__)
 
-# Global handler instance
-_handler_instance = None
 
-
-def install():
+def install(**kwargs):
     """Called when plugin is installed.
     
-    Instantiates and registers the API handler with the framework.
+    The ContextMonitorApiHandler is auto-discovered by the framework
+    from the api/ directory and registered automatically.
+    This hook performs post-install setup tasks.
+    
+    Returns:
+        bool: True if installation successful, False otherwise
     """
-    global _handler_instance
     try:
-        # Create instance of the API handler
-        _handler_instance = ContextMonitorApiHandler()
-        logger.info("[a0_context_monitor] API handler registered successfully")
-        logger.info("[a0_context_monitor] Available endpoints:")
-        logger.info("  GET /api/context-monitor/status")
-        logger.info("  GET /api/context-monitor/contexts")
-        logger.info("  GET /api/context-monitor/summary")
-        logger.info("  GET /api/context-monitor/contexts/{context_id}")
-        logger.info("  POST /api/context-monitor/export")
-        logger.info("  GET /api/context-monitor/table")
+        logger.info("[a0_context_monitor] Installing context monitor plugin...")
+        logger.info("[a0_context_monitor] Plugin installed successfully")
+        logger.info("[a0_context_monitor] Available API action endpoints:")
+        logger.info("  POST /api/plugins/a0_context_monitor/context_monitor_api")
+        logger.info("    ?action=status     - Check if monitoring is available")
+        logger.info("    ?action=contexts   - Get context inventory (add ?detailed=true)")
+        logger.info("    ?action=summary    - Get context summary statistics")
+        logger.info("    ?action=detail     - Get specific context details")
+        logger.info("    ?action=export     - Export context inventory to file")
+        logger.info("    ?action=table      - Get formatted summary table")
         return True
     except Exception as e:
-        logger.error(f"[a0_context_monitor] Failed to register API handler: {e}")
+        logger.error(f"[a0_context_monitor] Failed to install plugin: {e}")
+        import traceback
+        traceback.print_exc()
         return False
 
 
-def pre_update():
+def pre_update(**kwargs):
     """Called before plugin update."""
     logger.info("[a0_context_monitor] Preparing for plugin update")
     return True
 
 
-def uninstall():
+def uninstall(**kwargs):
     """Called when plugin is uninstalled."""
-    global _handler_instance
-    _handler_instance = None
     logger.info("[a0_context_monitor] Plugin uninstalled")
     return True
