@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+*.pyo
+.toggle-*
+COMMIT_READY.md
+REDESIGN_NOTES.md
+TEST_PLAN.md
+IMPLEMENTATION_SUMMARY.md

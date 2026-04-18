@@ -12,6 +12,7 @@ from typing import Dict, Any, Optional
 
 from helpers.api import ApiHandler, Input, Output, Request, Response
 from usr.plugins.a0_context_monitor.helpers.monitor import ContextMonitorHelper
+from usr.plugins.a0_context_monitor.helpers import token_state
 
 logger = logging.getLogger(__name__)
 
@@ -55,6 +56,9 @@ class ContextMonitorApiHandler(ApiHandler):
                 return await self._export_contexts(file_path)
             elif action == 'table':
                 return await self._get_table()
+            elif action == 'token_counts':
+                context_id = input.get('context_id', '') if isinstance(input, dict) else ''
+                return await self._get_token_counts(context_id)
             else:
                 return {"error": f"Unknown action: {action}", "status": 400}
         except Exception as e:
@@ -130,3 +134,19 @@ class ContextMonitorApiHandler(ApiHandler):
         """
         table = self.monitor.display_summary_table()
         return {"table": table, "status": "success"}
+
+    async def _get_token_counts(self, context_id: str = '') -> Dict[str, Any]:
+        """Get token count breakdown for contexts.
+
+        Args:
+            context_id: Optional specific context ID. If empty, returns all.
+
+        Returns:
+            Token breakdown by category (system/context/prompt/response/total)
+        """
+        if context_id:
+            result = token_state.get_tokens(context_id)
+            if result is None:
+                return {"error": f"No token data for context {context_id}", "context_id": context_id}
+            return {"context_id": context_id, **result}
+        return {"contexts": token_state.get_all_tokens()}

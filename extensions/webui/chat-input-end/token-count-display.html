@@ -1,0 +1,42 @@
+<html>
+<head>
+  <script type="module">
+    import { store } from "/plugins/a0_context_monitor/webui/token-count-store.js";
+  </script>
+</head>
+<body>
+  <div x-data>
+    <template x-if="$store.tokenCount">
+      <div
+        class="token-count-anchor"
+        x-create="$store.tokenCount.onOpen()"
+        x-destroy="$store.tokenCount.cleanup()"
+      >
+        <div
+          class="token-count-bar"
+          x-show="$store.tokenCount.hasData"
+          x-text="`SYS: ${$store.tokenCount.formatTokenCount($store.tokenCount.system_tokens)} | CTX: ${$store.tokenCount.formatTokenCount($store.tokenCount.context_tokens)} | PRM: ${$store.tokenCount.formatTokenCount($store.tokenCount.prompt_tokens)} | RES: ${$store.tokenCount.formatTokenCount($store.tokenCount.response_tokens)}`"
+        ></div>
+      </div>
+    </template>
+  </div>
+
+  <style>
+    .token-count-anchor {
+      display: flex;
+      justify-content: flex-end;
+      width: 100%;
+    }
+
+    .token-count-bar {
+      font-size: 8pt;
+      opacity: 0.6;
+      font-family: monospace;
+      text-align: right;
+      white-space: nowrap;
+      padding-right: 4px;
+      user-select: none;
+    }
+  </style>
+</body>
+</html>
