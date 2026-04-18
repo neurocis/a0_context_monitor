@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Context Monitor Dashboard</title>
+    <script type="module" src="/plugins/a0_context_monitor/webui/dashboard-store.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            padding: 24px;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            border-bottom: 1px solid #e0e0e0;
+            padding-bottom: 16px;
+        }
+        
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .header-actions {
+            display: flex;
+            gap: 12px;
+        }
+        
+        .button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        
+        .button-primary {
+            background: #0066cc;
+            color: white;
+        }
+        
+        .button-primary:hover {
+            background: #0052a3;
+        }
+        
+        .button-secondary {
+            background: #f0f0f0;
+            color: #333;
+            border: 1px solid #d0d0d0;
+        }
+        
+        .button-secondary:hover {
+            background: #e8e8e8;
+        }
+        
+        .button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        
+        .stat-card {
+            background: #f9f9f9;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 16px;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #666;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            letter-spacing: 0.5px;
+        }
+        
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: #0066cc;
+        }
+        
+        .stat-subtext {
+            font-size: 12px;
+            color: #999;
+            margin-top: 4px;
+        }
+        
+        .section {
+            margin-bottom: 24px;
+        }
+        
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .section-title .status-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #4caf50;
+        }
+        
+        .section-title .status-indicator.error {
+            background: #f44336;
+        }
+        
+        .table-wrapper {
+            overflow-x: auto;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        
+        thead {
+            background: #f5f5f5;
+            border-bottom: 2px solid #e0e0e0;
+        }
+        
+        th {
+            text-align: left;
+            padding: 12px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        tbody tr:hover {
+            background: #fafafa;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .badge-running {
+            background: #c8e6c9;
+            color: #2e7d32;
+        }
+        
+        .badge-idle {
+            background: #ffecb3;
+            color: #f57f17;
+        }
+        
+        .no-data {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+        
+        .timestamp {
+            font-size: 12px;
+            color: #999;
+            margin-top: 16px;
+            text-align: right;
+        }
+        
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            color: #666;
+        }
+        
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #0066cc;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 8px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .error-message {
+            background: #ffebee;
+            border: 1px solid #ef5350;
+            border-radius: 4px;
+            padding: 12px;
+            color: #c62828;
+            margin-bottom: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div x-data>
+        <template x-if="$store.contextMonitorStore">
+            <div x-init="$store.contextMonitorStore.onOpen()" x-destroy="$store.contextMonitorStore.cleanup()">
+                <div class="container">
+                    <!-- Header -->
+                    <div class="header">
+                        <h1>🔍 Context Monitor</h1>
+                        <div class="header-actions">
+                            <button 
+                                class="button button-secondary" 
+                                @click="$store.contextMonitorStore.refresh()"
+                                :disabled="$store.contextMonitorStore.loading"
+                            >
+                                🔄 Refresh
+                            </button>
+                            <button 
+                                class="button button-primary" 
+                                @click="$store.contextMonitorStore.exportInventory()"
+                                :disabled="$store.contextMonitorStore.loading"
+                            >
+                                📥 Export
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Error Message -->
+                    <template x-if="$store.contextMonitorStore.error">
+                        <div class="error-message" x-text="$store.contextMonitorStore.error"></div>
+                    </template>
+                    
+                    <!-- Status Check -->
+                    <template x-if="!$store.contextMonitorStore.available">
+                        <div class="error-message">
+                            ⚠️ Context monitoring is not available. Ensure AgentContext is properly initialized.
+                        </div>
+                    </template>
+                    
+                    <!-- Stats Grid -->
+                    <template x-if="$store.contextMonitorStore.summary && $store.contextMonitorStore.available">
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-label">Total Contexts</div>
+                                <div class="stat-value" x-text="$store.contextMonitorStore.summary.total_contexts || 0"></div>
+                                <div class="stat-subtext">Active instances</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-label">Total Memory</div>
+                                <div class="stat-value" x-text="($store.contextMonitorStore.summary.total_estimated_size_mb || 0).toFixed(1) + ' MB'"></div>
+                                <div class="stat-subtext">Estimated usage</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-label">Running</div>
+                                <div class="stat-value" x-text="$store.contextMonitorStore.summary.running_contexts || 0"></div>
+                                <div class="stat-subtext">Actively processing</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-label">Idle</div>
+                                <div class="stat-value" x-text="$store.contextMonitorStore.summary.idle_contexts || 0"></div>
+                                <div class="stat-subtext">Waiting for input</div>
+                            </div>
+                        </div>
+                    </template>
+                    
+                    <!-- Loading State -->
+                    <template x-if="$store.contextMonitorStore.loading && !$store.contextMonitorStore.summary">
+                        <div class="loading">
+                            <div class="spinner"></div>
+                            Loading context data...
+                        </div>
+                    </template>
+                    
+                    <!-- Contexts Table -->
+                    <template x-if="$store.contextMonitorStore.summary && $store.contextMonitorStore.available">
+                        <div class="section">
+                            <div class="section-title">
+                                <span class="status-indicator" :class="{error: $store.contextMonitorStore.error}"></span>
+                                Contexts Inventory
+                            </div>
+                            
+                            <template x-if="$store.contextMonitorStore.contexts && $store.contextMonitorStore.contexts.length > 0">
+                                <div class="table-wrapper">
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>ID</th>
+                                                <th>Name</th>
+                                                <th>Type</th>
+                                                <th>Size (MB)</th>
+                                                <th>Messages</th>
+                                                <th>Status</th>
+                                                <th>Created</th>
+                                                <th>Last Activity</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <template x-for="context in $store.contextMonitorStore.contexts" :key="context.id">
+                                                <tr>
+                                                    <td><code x-text="context.id.substring(0, 8) + '...'"></code></td>
+                                                    <td x-text="context.name || '(unnamed)'"></td>
+                                                    <td x-text="context.type || '—'"></td>
+                                                    <td x-text="(context.estimated_size_mb || 0).toFixed(2)"></td>
+                                                    <td x-text="context.log_entries || 0"></td>
+                                                    <td>
+                                                        <span 
+                                                            class="badge" 
+                                                            :class="context.is_running ? 'badge-running' : 'badge-idle'"
+                                                            x-text="context.is_running ? 'RUNNING' : 'IDLE'"
+                                                        ></span>
+                                                    </td>
+                                                    <td x-text="new Date(context.created_at).toLocaleDateString()"></td>
+                                                    <td x-text="new Date(context.last_message).toLocaleTimeString()"></td>
+                                                </tr>
+                                            </template>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </template>
+                            
+                            <template x-if="!$store.contextMonitorStore.contexts || $store.contextMonitorStore.contexts.length === 0">
+                                <div class="no-data">No contexts found</div>
+                            </template>
+                        </div>
+                    </template>
+                    
+                    <!-- Timestamp -->
+                    <template x-if="$store.contextMonitorStore.summary && $store.contextMonitorStore.summary.timestamp">
+                        <div class="timestamp">
+                            Updated: <span x-text="new Date($store.contextMonitorStore.summary.timestamp).toLocaleString()"></span>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </template>
+    </div>
+</body>
+</html>
