@@ -1,0 +1,30 @@
+<html>
+<head>
+  <script type="module">
+    import { store } from "/plugins/a0_context_monitor/webui/token-count-store.js";
+  </script>
+</head>
+<body>
+  <div x-data>
+    <template x-if="$store.tokenCount">
+      <div
+        class="token-count-injector"
+        x-create="$store.tokenCount.onOpen(); $store.tokenCount.mountTokenDisplay()"
+        x-destroy="$store.tokenCount.cleanup(); $store.tokenCount.unmountTokenDisplay()"
+      ></div>
+    </template>
+  </div>
+
+  <style>
+    .token-count-label {
+      font-size: 8pt;
+      opacity: 0.6;
+      font-family: monospace;
+      text-align: right;
+      white-space: nowrap;
+      user-select: none;
+      color: var(--color-text);
+    }
+  </style>
+</body>
+</html>
