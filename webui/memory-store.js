@@ -37,6 +37,39 @@ const model = {
     return `${kb.toFixed(1)}KB`;
   },
 
+  // Extract context ID from a sidebar row via Alpine's x-for scope.
+  // Falls back to index-based lookup from chatsStore when Alpine data
+  // is not yet available (e.g. during initial render).
+  _getContextIdFromRow(row, fallbackIndex) {
+    // Primary: walk up to <li> and read Alpine's _x_dataStack
+    let el = row.closest("li") || row;
+    while (el && el !== document.body) {
+      if (el._x_dataStack) {
+        for (const scope of el._x_dataStack) {
+          try {
+            if (scope.context && scope.context.id) {
+              return scope.context.id;
+            }
+          } catch (_) { /* proxy access may fail during teardown */ }
+        }
+        break;
+      }
+      el = el.parentElement;
+    }
+    // Fallback: index-based lookup from chatsStore
+    const contexts = Array.isArray(chatsStore.contexts)
+      ? chatsStore.contexts
+      : [];
+    if (
+      typeof fallbackIndex === "number" &&
+      fallbackIndex >= 0 &&
+      fallbackIndex < contexts.length
+    ) {
+      return contexts[fallbackIndex]?.id || null;
+    }
+    return null;
+  },
+
   // Fetch memory data from API
   async fetchMemoryData() {
     try {
@@ -69,13 +102,18 @@ const model = {
 
     this._sidebarMounted = true;
 
-    // Observe DOM mutations for chat list changes
+    // Observe DOM mutations for chat list changes.
+    // When the chat list is available, observe it directly with attribute
+    // tracking so collapse/expand (style/class toggles) trigger a re-sync.
     this._sidebarObserver = new MutationObserver(() => {
       this.scheduleSidebarSync();
     });
-    this._sidebarObserver.observe(document.body, {
+    const _chatList = document.querySelector(".chats-config-list");
+    this._sidebarObserver.observe(_chatList || document.body, {
       childList: true,
       subtree: true,
+      attributes: !!_chatList,
+      attributeFilter: ["style", "class"],
     });
 
     // Initial fetch and sync
@@ -99,24 +137,37 @@ const model = {
     });
   },
 
-  // Sync memory spans into sidebar chat rows
+  // Sync memory spans into sidebar chat rows.
+  // Uses Alpine scope data to resolve context IDs so hierarchy,
+  // grouping, and collapse/expand do not break the mapping.
   syncSidebarMemory() {
     const list = document.querySelector(".chats-config-list");
     if (!list) return;
 
+    // Upgrade observer: if we started on document.body and the chat
+    // list is now in the DOM, re-scope for better perf + attribute tracking.
+    if (!list._ctxMonObserved && this._sidebarObserver) {
+      this._sidebarObserver.disconnect();
+      this._sidebarObserver.observe(list, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ["style", "class"],
+      });
+      list._ctxMonObserved = true;
+    }
+
     const rows = Array.from(list.querySelectorAll(".chat-container"));
-    const contexts = Array.isArray(chatsStore.contexts) ? chatsStore.contexts : [];
 
     rows.forEach((row, index) => {
-      const context = contexts[index];
       const existing = row.querySelector(".ctx-memory-size");
+      const contextId = this._getContextIdFromRow(row, index);
 
-      if (!context) {
+      if (!contextId) {
         if (existing) existing.remove();
         return;
       }
 
-      const contextId = context.id;
       const sizeBytes = this.contextMemoryMap[contextId];
 
       if (typeof sizeBytes !== "number" || sizeBytes <= 0) {
